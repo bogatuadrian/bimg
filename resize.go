@@ -62,7 +62,7 @@ func Resize(buf []byte, o Options) ([]byte, error) {
 	// Do not enlarge the output if the input width or height
 	// are already less than the required dimensions
 	if !o.Enlarge && !o.Force {
-		if inWidth < o.Width && inHeight < o.Height {
+		if inWidth < o.Width || inHeight < o.Height {
 			factor = 1.0
 			shrink = 1
 			residual = 0
@@ -148,7 +148,7 @@ func applyDefaults(o Options, imageType ImageType) Options {
 }
 
 func normalizeOperation(o *Options, inWidth, inHeight int) {
-	if !o.Force && !o.Crop && !o.Embed && !o.Enlarge && o.Rotate == 0 && (o.Width > 0 || o.Height > 0) {
+	if !o.Force && !o.Crop && !o.Embed && !o.Enlarge && o.Rotate == 0 && (o.Width > 0 && o.Height > 0) {
 		o.Force = true
 	}
 }

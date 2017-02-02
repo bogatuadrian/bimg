@@ -112,6 +112,53 @@ func TestResizeCustomSizes(t *testing.T) {
 	}
 }
 
+func TestResizeNoEnlarge(t *testing.T) {
+	tests := []struct {
+		format  ImageType
+		options Options
+		expect  ImageSize
+	}{
+		{JPEG, Options{Width: 800, Height: 600}, ImageSize{Width: 800, Height: 600}},
+		{JPEG, Options{Width: 2000}, ImageSize{Width: 1680, Height: 1050}},
+		{JPEG, Options{Height: 2000}, ImageSize{Width: 1680, Height: 1050}},
+		{JPEG, Options{Height: 2000, Enlarge: true}, ImageSize{Width: 3200, Height: 2000}},
+
+		{JPEG, Options{Height: 2000, Width: 2000}, ImageSize{Width: 2000, Height: 2000}},
+		{JPEG, Options{Height: 2000, Width: 2000, Crop: true}, ImageSize{Width: 1680, Height: 1050}},
+		{JPEG, Options{Height: 2000, Width: 2000, Crop: true, Enlarge: true}, ImageSize{Width: 2000, Height: 2000}},
+		{JPEG, Options{Height: 2000, Enlarge:true}, ImageSize{Width: 3200, Height: 2000}},
+		{JPEG, Options{Width: 2000, Enlarge:true}, ImageSize{Width: 2000, Height: 1250}},
+
+		{JPEG, Options{Height: 200, Width: 200}, ImageSize{Width: 200, Height: 200}},
+		{JPEG, Options{Height: 200}, ImageSize{Width: 320, Height: 200}},
+		{JPEG, Options{Width: 200}, ImageSize{Width: 200, Height: 125}},
+	}
+
+	buf, _ := Read("fixtures/test.jpg")
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			image, err := Resize(buf, test.options)
+			if err != nil {
+				t.Errorf("Resize(imgData, %#v) error: %#v", test.options, err)
+			}
+
+			if DetermineImageType(image) != test.format {
+				t.Fatalf("Image format is invalid. Expected: %v", test.format)
+			}
+
+			size, _ := Size(image)
+			if size.Height != test.expect.Height {
+				t.Fatalf("Invalid height: %d, expected: %d", size.Height, test.expect.Height)
+			}
+
+			if size.Width != test.expect.Width {
+				t.Fatalf("Invalid width: %d, expected: %d", size.Width, test.expect.Width)
+			}
+		})
+
+	}
+}
+
 func TestRotate(t *testing.T) {
 	options := Options{Width: 800, Height: 600, Rotate: 270, Crop: true}
 	buf, _ := Read("fixtures/test.jpg")
