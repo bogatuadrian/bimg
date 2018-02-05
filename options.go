@@ -27,6 +27,8 @@ const (
 	GravitySouth
 	// GravityWest represents the west value used for image gravity orientation.
 	GravityWest
+	// GravitySmart enables libvips Smart Crop algorithm for image gravity orientation.
+	GravitySmart
 )
 
 // Interpolator represents the image interpolation value.
@@ -39,12 +41,15 @@ const (
 	Bilinear
 	// Nohalo interpolation value.
 	Nohalo
+	// Nearest neighbour interpolation value.
+	Nearest
 )
 
 var interpolations = map[Interpolator]string{
 	Bicubic:  "bicubic",
 	Bilinear: "bilinear",
 	Nohalo:   "nohalo",
+	Nearest:  "nearest",
 }
 
 func (i Interpolator) String() string {
@@ -61,6 +66,8 @@ const (
 	D90 Angle = 90
 	// D180 represents the rotation angle 180 degrees.
 	D180 Angle = 180
+	// D235 represents the rotation angle 235 degrees.
+	D235 Angle = 235
 	// D270 represents the rotation angle 270 degrees.
 	D270 Angle = 270
 )
@@ -104,6 +111,28 @@ const (
 	InterpretationXYZ Interpretation = C.VIPS_INTERPRETATION_XYZ
 )
 
+// Extend represents the image extend mode, used when the edges
+// of an image are extended, you can specify how you want the extension done.
+// See: http://www.vips.ecs.soton.ac.uk/supported/8.4/doc/html/libvips/libvips-conversion.html#VIPS-EXTEND-BACKGROUND:CAPS
+type Extend int
+
+const (
+	// ExtendBlack extend with black (all 0) pixels mode.
+	ExtendBlack Extend = C.VIPS_EXTEND_BLACK
+	// ExtendCopy copy the image edges.
+	ExtendCopy Extend = C.VIPS_EXTEND_COPY
+	// ExtendRepeat repeat the whole image.
+	ExtendRepeat Extend = C.VIPS_EXTEND_REPEAT
+	// ExtendMirror mirror the whole image.
+	ExtendMirror Extend = C.VIPS_EXTEND_MIRROR
+	// ExtendWhite extend with white (all bits set) pixels.
+	ExtendWhite Extend = C.VIPS_EXTEND_WHITE
+	// ExtendBackground with colour from the background property.
+	ExtendBackground Extend = C.VIPS_EXTEND_BACKGROUND
+	// ExtendLast extend with last pixel.
+	ExtendLast Extend = C.VIPS_EXTEND_LAST
+)
+
 // WatermarkFont defines the default watermark font to be used.
 var WatermarkFont = "sans 10"
 
@@ -125,6 +154,14 @@ type Watermark struct {
 	Text        string
 	Font        string
 	Background  Color
+}
+
+// WatermarkImage represents the image-based watermark supported options.
+type WatermarkImage struct {
+	Left    int
+	Top     int
+	Buf     []byte
+	Opacity float32
 }
 
 // GaussianBlur represents the gaussian image transformation values.
@@ -151,11 +188,11 @@ type Options struct {
 	AreaWidth      int
 	Top            int
 	Left           int
-	Extend         int
 	Quality        int
 	Compression    int
 	Zoom           int
 	Crop           bool
+	SmartCrop      bool // Deprecated, use: bimg.Options.Gravity = bimg.GravitySmart
 	Enlarge        bool
 	Embed          bool
 	Flip           bool
@@ -164,13 +201,20 @@ type Options struct {
 	NoAutoRotate   bool
 	NoProfile      bool
 	Interlace      bool
+	StripMetadata  bool
+	Trim           bool
+	Lossless       bool
+	Extend         Extend
 	Rotate         Angle
 	Background     Color
 	Gravity        Gravity
 	Watermark      Watermark
+	WatermarkImage WatermarkImage
 	Type           ImageType
 	Interpolator   Interpolator
 	Interpretation Interpretation
 	GaussianBlur   GaussianBlur
 	Sharpen        Sharpen
+	Threshold      float64
+	OutputICC      string
 }

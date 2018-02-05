@@ -39,6 +39,7 @@ func TestMetadata(t *testing.T) {
 		space       string
 	}{
 		{"test.jpg", "jpeg", 0, false, false, "srgb"},
+		{"test_icc_prophoto.jpg", "jpeg", 0, false, true, "srgb"},
 		{"test.png", "png", 0, true, false, "srgb"},
 		{"test.webp", "webp", 0, false, false, "srgb"},
 	}
@@ -56,13 +57,13 @@ func TestMetadata(t *testing.T) {
 			t.Fatalf("Unexpected image orientation: %d != %d", metadata.Orientation, file.orientation)
 		}
 		if metadata.Alpha != file.alpha {
-			t.Fatalf("Unexpected image alpha: %v != %v", metadata.Alpha, file.alpha)
+			t.Fatalf("Unexpected image alpha: %t != %t", metadata.Alpha, file.alpha)
 		}
 		if metadata.Profile != file.profile {
-			t.Fatalf("Unexpected image profile: %v != %v", metadata.Profile, file.profile)
+			t.Fatalf("Unexpected image profile: %t != %t", metadata.Profile, file.profile)
 		}
 		if metadata.Space != file.space {
-			t.Fatalf("Unexpected image profile: %v != %v", metadata.Profile, file.profile)
+			t.Fatalf("Unexpected image profile: %t != %t", metadata.Profile, file.profile)
 		}
 	}
 }
@@ -117,7 +118,7 @@ func TestColourspaceIsSupported(t *testing.T) {
 }
 
 func readFile(file string) []byte {
-	data, _ := os.Open(path.Join("fixtures", file))
+	data, _ := os.Open(path.Join("testdata", file))
 	buf, _ := ioutil.ReadAll(data)
 	return buf
 }

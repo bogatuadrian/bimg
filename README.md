@@ -2,21 +2,23 @@
 
 This is modified to fit my needs.
 
-# bimg [![Build Status](https://travis-ci.org/h2non/bimg.png)](https://travis-ci.org/h2non/bimg) [![GoDoc](https://godoc.org/github.com/h2non/bimg?status.svg)](https://godoc.org/github.com/h2non/bimg) [![Go Report Card](http://goreportcard.com/badge/h2non/bimg)](http://goreportcard.com/report/h2non/bimg) [![Coverage Status](https://coveralls.io/repos/github/h2non/bimg/badge.svg?branch=master)](https://coveralls.io/github/h2non/bimg?branch=master)
+# bimg [![Build Status](https://travis-ci.org/h2non/bimg.svg)](https://travis-ci.org/h2non/bimg) [![GoDoc](https://godoc.org/github.com/h2non/bimg?status.svg)](https://godoc.org/github.com/h2non/bimg) [![Go Report Card](http://goreportcard.com/badge/h2non/bimg)](http://goreportcard.com/report/h2non/bimg) [![Coverage Status](https://coveralls.io/repos/github/h2non/bimg/badge.svg?branch=master)](https://coveralls.io/github/h2non/bimg?branch=master) ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 Small [Go](http://golang.org) package for fast high-level image processing using [libvips](https://github.com/jcupitt/libvips) via C bindings, providing a simple, elegant and fluent [programmatic API](#examples).
 
-bimg was designed to be a small and efficient library supporting a common set of [image operations](#supported-image-operations) such as crop, resize, rotate, zoom or watermark. It can read JPEG, PNG, WEBP and TIFF formats and output to JPEG, PNG and WEBP, including conversion across them.
+bimg was designed to be a small and efficient library supporting a common set of [image operations](#supported-image-operations) such as crop, resize, rotate, zoom or watermark. It can read JPEG, PNG, WEBP natively, and optionally TIFF, PDF, GIF and SVG formats if `libvips@8.3+` is compiled with proper library bindings.
+
+bimg is able to output images as JPEG, PNG and WEBP formats, including transparent conversion across them.
 
 bimg uses internally libvips, a powerful library written in C for image processing which requires a [low memory footprint](http://www.vips.ecs.soton.ac.uk/index.php?title=Speed_and_Memory_Use)
 and it's typically 4x faster than using the quickest ImageMagick and GraphicsMagick settings or Go native `image` package, and in some cases it's even 8x faster processing JPEG images.
 
 If you're looking for an HTTP based image processing solution, see [imaginary](https://github.com/h2non/imaginary).
 
-bimg was heavily inspired in [sharp](https://github.com/lovell/sharp), its homologous package built for [node.js](http://nodejs.org). bimg is used in production environments for more than a year processing thousands of images per day.
+bimg was heavily inspired in [sharp](https://github.com/lovell/sharp), its homologous package built for [node.js](http://nodejs.org). bimg is used in production environments processing thousands of images per day.
 
 **v1 notice**: `bimg` introduces some minor breaking changes in `v1` release.
-If you're using `gopkg.in`, you can still rely in the `v0` without worrying about breaking changes.
+If you're using `gopkg.in`, you can still rely in the `v0` without worrying about API breaking changes.
 
 ## Contents
 
@@ -28,30 +30,34 @@ If you're using `gopkg.in`, you can still rely in the `v0` without worrying abou
 - [Examples](#examples)
 - [Debugging](#debugging)
 - [API](#api)
+- [Authors](#authors)
 - [Credits](#credits)
 
 ## Supported image operations
 
 - Resize
 - Enlarge
-- Crop
+- Crop (including smart crop support, libvips 8.5+)
 - Rotate (with auto-rotate based on EXIF orientation)
 - Flip (with auto-flip based on EXIF metadata)
 - Flop
 - Zoom
 - Thumbnail
 - Extract area
-- Watermark (text only)
+- Watermark (using text or image)
 - Gaussian blur effect
 - Custom output color space (RGB, grayscale...)
 - Format conversion (with additional quality/compression settings)
 - EXIF metadata (size, alpha channel, profile, orientation...)
+- Trim (libvips 8.6+)
 
 ## Prerequisites
 
-- [libvips](https://github.com/jcupitt/libvips) v7.40.0+ (7.42.0+ recommended)
+- [libvips](https://github.com/jcupitt/libvips) 7.42+ or 8+ (8.4+ recommended)
 - C compatible compiler such as gcc 4.6+ or clang 3.0+
 - Go 1.3+
+
+**Note**: `libvips` v8.3+ is required for GIF, PDF and SVG support.
 
 ## Installation
 
@@ -63,17 +69,15 @@ go get -u gopkg.in/h2non/bimg.v1
 
 Run the following script as `sudo` (supports OSX, Debian/Ubuntu, Redhat, Fedora, Amazon Linux):
 ```bash
-curl -s https://raw.githubusercontent.com/lovell/sharp/master/preinstall.sh | sudo bash -
+curl -s https://raw.githubusercontent.com/h2non/bimg/master/preinstall.sh | sudo bash -
 ```
 
 If you wanna take the advantage of [OpenSlide](http://openslide.org/), simply add `--with-openslide` to enable it:
 ```bash
-curl -s https://raw.githubusercontent.com/lovell/sharp/master/preinstall.sh | sudo bash -s --with-openslide
+curl -s https://raw.githubusercontent.com/h2non/bimg/master/preinstall.sh | sudo bash -s --with-openslide
 ```
 
-The [install script](https://github.com/lovell/sharp/blob/master/preinstall.sh) requires `curl` and `pkg-config`
-
-For platform specific installations, see  [Mac OS](https://github.com/lovell/sharp/blob/master/README.md#mac-os-tips) tips or [Windows](https://github.com/lovell/sharp/blob/master/README.md#windows) tips
+The [install script](https://github.com/h2non/bimg/blob/master/preinstall.sh) requires `curl` and `pkg-config`.
 
 ## Performance
 
@@ -81,7 +85,6 @@ libvips is probably the faster open source solution for image processing.
 Here you can see some performance test comparisons for multiple scenarios:
 
 - [libvips speed and memory usage](http://www.vips.ecs.soton.ac.uk/index.php?title=Speed_and_Memory_Use)
-- [sharp performance tests](https://github.com/lovell/sharp#the-task)
 
 ## Benchmark
 
@@ -114,7 +117,7 @@ BenchmarkWatermarWebp-8   	      30	  49360369 ns/op
 import (
   "fmt"
   "os"
-  "gopkg.in/h2non/bimg.v0"
+  "gopkg.in/h2non/bimg.v1"
 )
 ```
 
@@ -132,7 +135,7 @@ if err != nil {
 }
 
 size, err := bimg.NewImage(newImage).Size()
-if size.Width == 400 && size.Height == 300 {
+if size.Width == 800 && size.Height == 600 {
   fmt.Println("The image size is valid")
 }
 
@@ -322,6 +325,11 @@ export G_DEBUG=fatal-warnings,fatal-criticals
 ## API
 
 See [godoc reference](https://godoc.org/github.com/h2non/bimg) for detailed API documentation.
+
+## Authors
+
+- [Tomás Aparicio](https://github.com/h2non) - Original author and architect.
+- [Kirill Danshin](https://github.com/kirillDanshin) - Maintainer since April 2017.
 
 ## Credits
 
